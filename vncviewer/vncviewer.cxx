@@ -54,6 +54,9 @@
 #include <rfb/Timer.h>
 #include <rfb/Exception.h>
 #include <network/TcpSocket.h>
+#ifndef WIN32
+#include <network/UnixSocket.h>
+#endif
 #include <os/os.h>
 
 #include <FL/Fl.H>
@@ -600,6 +603,10 @@ int main(int argc, char** argv)
     if (strlen (via.getValueStr()) > 0 && mktunnel() != 0)
       usage(argv[0]);
 #endif
+  }
+
+  if (vncServerName[0] == '/' || vncServerName[0] == '.') {
+	sock = new UnixSocket(vncServerName);
   }
 
   CConn *cc = new CConn(vncServerName, sock);
