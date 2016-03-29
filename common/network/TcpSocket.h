@@ -81,15 +81,15 @@ namespace network {
     virtual Socket* accept();
 
     static void getMyAddresses(std::list<char*>* result);
-    int getMyPort();
+    virtual int getMyPort();
   };
 
-  void createLocalTcpListeners(std::list<TcpListener*> *listeners,
+  void createLocalTcpListeners(std::list<SocketListener*> *listeners,
                                int port);
-  void createTcpListeners(std::list<TcpListener*> *listeners,
+  void createTcpListeners(std::list<SocketListener*> *listeners,
                           const char *addr,
                           int port);
-  void createTcpListeners(std::list<TcpListener*> *listeners,
+  void createTcpListeners(std::list<SocketListener*> *listeners,
                           const struct addrinfo *ai);
 
   typedef struct vnc_sockaddr {

@@ -91,8 +91,8 @@ public:
 
 
 XserverDesktop::XserverDesktop(int screenIndex_,
-                               std::list<network::TcpListener*> listeners_,
-                               std::list<network::TcpListener*> httpListeners_,
+                               std::list<network::SocketListener*> listeners_,
+                               std::list<network::SocketListener*> httpListeners_,
                                const char* name, const rfb::PixelFormat &pf,
                                int width, int height,
                                void* fbptr, int stride)
@@ -401,11 +401,11 @@ void XserverDesktop::readBlockHandler(fd_set* fds, struct timeval ** timeout)
 
     // Add all sockets we want read events for, after purging
     // any closed sockets.
-    for (std::list<network::TcpListener*>::iterator i = listeners.begin();
+    for (std::list<network::SocketListener*>::iterator i = listeners.begin();
          i != listeners.end();
          i++)
       FD_SET((*i)->getFd(), fds);
-    for (std::list<network::TcpListener*>::iterator i = httpListeners.begin();
+    for (std::list<network::SocketListener*>::iterator i = httpListeners.begin();
          i != httpListeners.end();
          i++)
       FD_SET((*i)->getFd(), fds);
@@ -464,7 +464,7 @@ void XserverDesktop::readWakeupHandler(fd_set* fds, int nfds)
     // First check for file descriptors with something to do
     if (nfds >= 1) {
 
-      for (std::list<network::TcpListener*>::iterator i = listeners.begin();
+      for (std::list<network::SocketListener*>::iterator i = listeners.begin();
            i != listeners.end();
            i++) {
         if (FD_ISSET((*i)->getFd(), fds)) {
@@ -476,7 +476,7 @@ void XserverDesktop::readWakeupHandler(fd_set* fds, int nfds)
         }
       }
 
-      for (std::list<network::TcpListener*>::iterator i = httpListeners.begin();
+      for (std::list<network::SocketListener*>::iterator i = httpListeners.begin();
            i != httpListeners.end();
            i++) {
         if (FD_ISSET((*i)->getFd(), fds)) {

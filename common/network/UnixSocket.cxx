@@ -129,11 +129,9 @@ UnixSocket::~UnixSocket() {
     closesocket(getFd());
 }
 
-/*
 int UnixSocket::getMyPort() {
-  return getSockPort(getFd());
+  return 0;
 }
-*/
 
 char* UnixSocket::getPeerAddress() {
   struct sockaddr_un sa;
@@ -153,10 +151,6 @@ char* UnixSocket::getPeerEndpoint() {
 
 bool UnixSocket::sameMachine() {
   return true;
-}
-
-int UnixSocket::getMyPort() {
-	return 0;
 }
 
 int UnixSocket::getPeerPort() {
@@ -260,6 +254,11 @@ UnixListener::accept() {
   // Create the socket object & check connection is allowed
   UnixSocket* s = new UnixSocket(new_sock);
   return s;
+}
+
+int
+UnixListener::getMyPort() {
+	return 0;
 }
 
 #endif

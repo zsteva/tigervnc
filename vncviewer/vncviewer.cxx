@@ -554,7 +554,7 @@ int main(int argc, char** argv)
 #endif
 
   if (listenMode) {
-    std::list<TcpListener*> listeners;
+    std::list<SocketListener*> listeners;
     try {
       int port = 5500;
       if (isdigit(vncServerName[0]))
@@ -568,7 +568,7 @@ int main(int argc, char** argv)
       while (sock == NULL) {
         fd_set rfds;
         FD_ZERO(&rfds);
-        for (std::list<TcpListener*>::iterator i = listeners.begin();
+        for (std::list<SocketListener*>::iterator i = listeners.begin();
              i != listeners.end();
              i++)
           FD_SET((*i)->getFd(), &rfds);
@@ -583,7 +583,7 @@ int main(int argc, char** argv)
           }
         }
 
-        for (std::list<TcpListener*>::iterator i = listeners.begin ();
+        for (std::list<SocketListener*>::iterator i = listeners.begin ();
              i != listeners.end();
              i++)
           if (FD_ISSET((*i)->getFd(), &rfds)) {

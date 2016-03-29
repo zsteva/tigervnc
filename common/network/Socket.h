@@ -98,6 +98,8 @@ namespace network {
     // setFilter() applies the specified filter to all new connections
     void setFilter(ConnectionFilter* f) {filter = f;}
     int getFd() {return fd;}
+
+    virtual int getMyPort() = 0;
   protected:
     int fd;
     ConnectionFilter* filter;

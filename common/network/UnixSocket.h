@@ -64,7 +64,7 @@ namespace network {
     virtual Socket* accept();
 
     static void getMyAddresses(std::list<char*>* result);
-    int getMyPort();
+    virtual int getMyPort();
   };
 
 }

@@ -59,6 +59,7 @@ rfb::IntParameter httpPort("httpPort", "TCP port to listen for HTTP",0);
 rfb::AliasParameter rfbwait("rfbwait", "Alias for ClientWaitTimeMillis",
                             &rfb::Server::clientWaitTimeMillis);
 rfb::IntParameter rfbport("rfbport", "TCP port to listen for RFB protocol",0);
+rfb::StringParameter rfbsocket("rfbsocket", "UNIX socket to listen for RFB protocol","");
 rfb::StringParameter desktopName("desktop", "Name of VNC desktop","x11");
 rfb::BoolParameter localhostOnly("localhost",
                                  "Only allow connections from localhost",
@@ -134,8 +135,8 @@ void vncExtensionInit(void)
     for (int scr = 0; scr < vncGetScreenCount(); scr++) {
 
       if (!desktop[scr]) {
-        std::list<network::TcpListener*> listeners;
-        std::list<network::TcpListener*> httpListeners;
+        std::list<network::SocketListener*> listeners;
+        std::list<network::SocketListener*> httpListeners;
         if (scr == 0 && vncInetdSock != -1) {
           if (network::TcpSocket::isListening(vncInetdSock))
           {
@@ -143,26 +144,35 @@ void vncExtensionInit(void)
             vlog.info("inetd wait");
           }
         } else {
-          const char *addr = interface;
-          int port = rfbport;
-          if (port == 0) port = 5900 + atoi(vncGetDisplay());
-          port += 1000 * scr;
-          if (strcasecmp(addr, "all") == 0)
-            addr = 0;
-          if (localhostOnly)
-            network::createLocalTcpListeners(&listeners, port);
-          else
-            network::createTcpListeners(&listeners, addr, port);
+			if (rfbport > 0) {
+			  const char *addr = interface;
+			  int port = rfbport;
+			  if (port == 0) port = 5900 + atoi(vncGetDisplay());
+			  port += 1000 * scr;
+			  if (strcasecmp(addr, "all") == 0)
+				addr = 0;
+			  if (localhostOnly)
+				network::createLocalTcpListeners(&listeners, port);
+			  else
+				network::createTcpListeners(&listeners, addr, port);
 
-          vlog.info("Listening for VNC connections on %s interface(s), port %d",
-                    localhostOnly ? "local" : (const char*)interface,
-                    port);
+			  vlog.info("Listening for VNC connections on %s interface(s), port %d",
+						localhostOnly ? "local" : (const char*)interface,
+						port);
+			}
+
+			char *socketPath = rfbsocket.getValueStr();
+			if (strlen(socketPath) > 0) {
+			}
 
           CharArray httpDirStr(httpDir.getData());
           if (httpDirStr.buf[0]) {
-            port = httpPort;
+			  const char *addr = interface;
+            int port = httpPort;
             if (port == 0) port = 5800 + atoi(vncGetDisplay());
             port += 1000 * scr;
+			  if (strcasecmp(addr, "all") == 0)
+				addr = 0;
             if (localhostOnly)
               network::createLocalTcpListeners(&httpListeners, port);
             else
