@@ -139,6 +139,8 @@ BoolParameter fullscreenSystemKeys("FullscreenSystemKeys",
 
 #ifndef WIN32
 StringParameter via("via", "Gateway to tunnel via", "");
+
+StringParameter param_pipe("pipe", "Gateway to tunnel via pipe", "");
 #endif
 
 static const char* IDENTIFIER_STRING = "TigerVNC Configuration file Version 1.0";

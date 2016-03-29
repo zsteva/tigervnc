@@ -62,6 +62,7 @@ extern rfb::BoolParameter fullscreenSystemKeys;
 
 #ifndef WIN32
 extern rfb::StringParameter via;
+extern rfb::StringParameter param_pipe;
 #endif
 
 void saveViewerParameters(const char *filename, const char *servername=NULL);

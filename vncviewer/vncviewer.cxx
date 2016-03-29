@@ -539,6 +539,18 @@ int main(int argc, char** argv)
     exit_vncviewer();
     return 1;
   }
+
+  /* Specifying -via and -listen together is nonsense */
+  if (listenMode && strlen(param_pipe.getValueStr()) > 0) {
+    // TRANSLATORS: "Parameters" are command line arguments, or settings
+    // from a file or the Windows registry.
+    vlog.error(_("Parameters -listen and -pipe are incompatible"));
+    fl_alert(_("Parameters -listen and -pipe are incompatible"));
+    exit_vncviewer();
+    return 1;
+  }
+
+
 #endif
 
   if (listenMode) {
