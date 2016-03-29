@@ -477,7 +477,7 @@ int main(int argc, char** argv)
   signal(SIGINT, CleanupSignalHandler);
   signal(SIGTERM, CleanupSignalHandler);
 
-  std::list<TcpListener*> listeners;
+  std::list<SocketListener*> listeners;
 
   try {
     TXWindow::init(dpy,"x0vncserver");
@@ -499,7 +499,7 @@ int main(int argc, char** argv)
     const char *hostsData = hostsFile.getData();
     FileTcpFilter fileTcpFilter(hostsData);
     if (strlen(hostsData) != 0)
-      for (std::list<TcpListener*>::iterator i = listeners.begin();
+      for (std::list<SocketListener*>::iterator i = listeners.begin();
            i != listeners.end();
            i++)
         (*i)->setFilter(&fileTcpFilter);
@@ -518,7 +518,7 @@ int main(int argc, char** argv)
 
       FD_ZERO(&rfds);
       FD_SET(ConnectionNumber(dpy), &rfds);
-      for (std::list<TcpListener*>::iterator i = listeners.begin();
+      for (std::list<SocketListener*>::iterator i = listeners.begin();
            i != listeners.end();
            i++)
         FD_SET((*i)->getFd(), &rfds);
@@ -567,7 +567,7 @@ int main(int argc, char** argv)
       }
 
       // Accept new VNC connections
-      for (std::list<TcpListener*>::iterator i = listeners.begin();
+      for (std::list<SocketListener*>::iterator i = listeners.begin();
            i != listeners.end();
            i++) {
         if (FD_ISSET((*i)->getFd(), &rfds)) {
