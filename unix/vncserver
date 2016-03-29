@@ -221,7 +221,15 @@ if ((!$securityTypeArgSpecified || $vncAuthEnabled) && !$passwordArgSpecified) {
  
 # Find display number.
 
-if ((@ARGV > 0) && ($ARGV[0] =~ /^:(\d+)$/)) {
+$displayName = undef;
+
+if ((@ARGV > 0) && ($ARGV[0] =~ /^:([a-zA-Z][a-zA-Z0-9_-]*)$/)) {
+    $displayName = $1;
+    $displayNumber = &FindDisplayNumberForUnixSocket($displayName);
+    if ($displayNumber == -1) {
+	$displayNumber = &GetDisplayNumber();
+    }
+} elsif ((@ARGV > 0) && ($ARGV[0] =~ /^:(\d+)$/)) {
     $displayNumber = $1;
     shift(@ARGV);
     if (!&CheckDisplayNumber($displayNumber)) {
@@ -233,11 +241,17 @@ if ((@ARGV > 0) && ($ARGV[0] =~ /^:(\d+)$/)) {
     $displayNumber = &GetDisplayNumber();
 }
 
-$vncPort = 5900 + $displayNumber;
+$vncPort = undef;
 
-$desktopLog = "$vncUserDir/$host:$displayNumber.log";
+if (defined($displayName)) {
+	$vncSocket = $vncUserDir . '/' . $host . ':' . $displayName . ':' . $displayNumber . '.socket';
+	$desktopLog = $vncUserDir . '/' . $host . ':' . $displayName . ':' . $displayNumber . '.log';
+} else {
+    $vncPort = 5900 + $displayNumber;
+    $desktopLog = "$vncUserDir/$host:$displayNumber.log";
+}
+
 unlink($desktopLog);
-
 # Make an X server cookie and set up the Xauthority file
 
 $cookie = `mcookie`;
@@ -249,6 +263,8 @@ close(XAUTH);
 
 if ($opt{'-name'}) {
     $desktopName = $opt{'-name'};
+} elsif (defined($displayName)) {
+    $desktopName = "$host:$displayName :$displayNumber ($ENV{USER})";
 } else {
     $desktopName = "$host:$displayNumber ($ENV{USER})";
 }
@@ -268,7 +284,12 @@ $default_opts{depth} = $depth if ($depth);
 $default_opts{pixelformat} = $pixelformat if ($pixelformat);
 $default_opts{rfbwait} = 30000;
 $default_opts{rfbauth} = "$vncUserDir/passwd";
-$default_opts{rfbport} = $vncPort;
+if (defined($vncSocket)) {
+    $default_opts{rfbsocket} = $vncSocket;
+}
+if (defined($vncPort)) {
+    $default_opts{rfbport} = $vncPort;
+}
 $default_opts{fp} = $fontPath if ($fontPath);
 $default_opts{pn} = "";
 
@@ -311,7 +332,11 @@ $cmd .= " >> " . &quotedString($desktopLog) . " 2>&1";
 
 # Run $cmd and record the process ID.
 
-$pidFile = "$vncUserDir/$host:$displayNumber.pid";
+if (defined($displayName)) {
+    $pidFile = "$vncUserDir/$host:$displayName:$displayNumber.pid";
+} else {
+    $pidFile = "$vncUserDir/$host:$displayNumber.pid";
+}
 system("$cmd & echo \$! >$pidFile");
 
 # Give Xvnc a chance to start up
@@ -344,7 +369,11 @@ unless (kill 0, `cat $pidFile`) {
     die "\n";
 }
 
-warn "\nNew '$desktopName' desktop is $host:$displayNumber\n\n";
+if (defined($displayName)) {
+    warn "\nNew '$desktopName' desktop is $host:$displayName :$displayNumber\n\n";
+} else {
+    warn "\nNew '$desktopName' desktop is $host:$displayNumber\n\n";
+}
 
 # Create the user's xstartup script if necessary.
 
@@ -457,6 +486,26 @@ sub GetDisplayNumber
     die "$prog: no free display number on $host.\n";
 }
 
+sub FindDisplayNumberForUnixSocket
+{
+    local ($name) = @_;
+
+    opendir(dir, $vncUserDir);
+    my @filelist = readdir(dir);
+    closedir(dir);
+
+    foreach my $file (@filelist) {
+	if ($file =~ /$host:$name:(\d+)$\.pid/) {
+	    chop($tmp_pid = `cat $vncUserDir/$file`);
+	    if (kill 0, $tmp_pid) {
+		return $1;
+	    } else {
+		unlink ($vncUserDir . "/" . $file);
+	    }
+	}
+    }
+    return -1;
+}
 
 #
 # CheckDisplayNumber checks if the given display number is available.  A
@@ -618,7 +667,7 @@ sub removeSlashes
 
 sub Usage
 {
-    die("\nusage: $prog [:<number>] [-name <desktop-name>] [-depth <depth>]\n".
+    die("\nusage: $prog [:<number|socket_name>] [-name <desktop-name>] [-depth <depth>]\n".
 	"                 [-geometry <width>x<height>]\n".
 	"                 [-pixelformat rgbNNN|bgrNNN]\n".
 	"                 [-fp <font-path>]\n".
@@ -627,7 +676,7 @@ sub Usage
 	"                 [-noxstartup]\n".
 	"                 [-xstartup <file>]\n".
 	"                 <Xvnc-options>...\n\n".
-	"       $prog -kill <X-display>\n\n".
+	"       $prog -kill :<number|socket_name>\n\n".
 	"       $prog -list\n\n");
 }
 
@@ -642,15 +691,24 @@ sub List
     my @filelist = readdir(dir);
     closedir(dir);
     print "\nTigerVNC server sessions:\n\n";
-    print "X DISPLAY #\tPROCESS ID\n";
+    print "VNC SESSION\tX DISPLAY #\tPROCESS ID\n";
     foreach my $file (@filelist) {
 	if ($file =~ /$host:(\d+)$\.pid/) {
 	    chop($tmp_pid = `cat $vncUserDir/$file`);
 	    if (kill 0, $tmp_pid) {
-		print ":".$1."\t\t".`cat $vncUserDir/$file`;
+		print ":".$1."\t:".$1."\t".`cat $vncUserDir/$file`;
 	    } else {
 		unlink ($vncUserDir . "/" . $file);
 	    }
+	}
+	if ($file =~ /$host:([a-zA-Z][a-zA-Z0-9_-]*):(\d+)$\.pid/) {
+	    chop($tmp_pid = `cat $vncUserDir/$file`);
+	    if (kill 0, $tmp_pid) {
+		print ":".$1."\t:".$2."\t".`cat $vncUserDir/$file`;
+	    } else {
+		unlink ($vncUserDir . "/" . $file);
+	    }
+
 	}
     }
     exit 1;
@@ -665,8 +723,17 @@ sub Kill
 {
     $opt{'-kill'} =~ s/(:\d+)\.\d+$/$1/; # e.g. turn :1.0 into :1
 
-    if ($opt{'-kill'} =~ /^:\d+$/) {
+    if ($opt{'-kill'} =~ /^:([a-zA-Z][a-zA-Z0-9_-]*)$/) {
+	$displayName = $1;
+	$displayNumber = &FindDisplayNumberForUnixSocket($displayName);
+	if ($displayNumber == -1) {
+	    die("\nCan't find session name :$displayName\n");
+	}
+	$pidFile = $vncUserDir . '/' . $host . ':' . $displayName . ':' . $displayNumber . '.pid';
+    } elsif ($opt{'-kill'} =~ /^:\d+$/) {
 	$pidFile = "$vncUserDir/$host$opt{'-kill'}.pid";
+	$displayNumber = $opt{'-kill'};
+	$displayNumber =~ s/://;
     } else {
 	if ($opt{'-kill'} !~ /^$host:/) {
 	    die "\nCan't tell if $opt{'-kill'} is on $host\n".
@@ -696,17 +763,16 @@ sub Kill
 
     } else {
 	warn "Xvnc process ID $pid already killed\n";
-	$opt{'-kill'} =~ s/://;
     
-	if (-e "/tmp/.X11-unix/X$opt{'-kill'}") {
+	if (-e "/tmp/.X11-unix/X" . $displayNumber) {
 	    print "Xvnc did not appear to shut down cleanly.";
-	    print " Removing /tmp/.X11-unix/X$opt{'-kill'}\n";
-	    unlink "/tmp/.X11-unix/X$opt{'-kill'}";
+	    print " Removing /tmp/.X11-unix/X" . $displayNumber . "\n";
+	    unlink "/tmp/.X11-unix/X" . $displayNumber;
 	}
-	if (-e "/tmp/.X$opt{'-kill'}-lock") {
+	if (-e "/tmp/.X" . $displayNumber . "-lock") {
 	    print "Xvnc did not appear to shut down cleanly.";
-	    print " Removing /tmp/.X$opt{'-kill'}-lock\n";
-	    unlink "/tmp/.X$opt{'-kill'}-lock";
+	    print " Removing /tmp/.X" . $displayNumber . "-lock\n";
+	    unlink "/tmp/.X" . $displayNumber . "-lock";
 	}
     }
 

@@ -30,6 +30,7 @@
 #include <rfb/Hostname.h>
 #include <rfb/Region.h>
 #include <network/TcpSocket.h>
+#include <network/UnixSocket.h>
 
 #include "XserverDesktop.h"
 #include "vncExtInit.h"
@@ -163,6 +164,8 @@ void vncExtensionInit(void)
 
 			char *socketPath = rfbsocket.getValueStr();
 			if (strlen(socketPath) > 0) {
+				network::SocketListener *new_sock = new network::UnixListener(socketPath);
+				listeners.push_back(new_sock);
 			}
 
           CharArray httpDirStr(httpDir.getData());
