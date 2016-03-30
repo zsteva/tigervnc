@@ -614,11 +614,13 @@ int main(int argc, char** argv)
 #ifndef WIN32
     if (strlen (via.getValueStr()) > 0 && mktunnel() != 0)
       usage(argv[0]);
-#endif
-  }
 
-  if (vncServerName[0] == '/' || vncServerName[0] == '.') {
-	sock = new UnixSocket(vncServerName);
+	  if (vncServerName[0] == '/' || vncServerName[0] == '.') {
+		sock = new UnixSocket(vncServerName);
+	  }
+
+#endif
+
   }
 
   CConn *cc = new CConn(vncServerName, sock);

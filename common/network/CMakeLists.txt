@@ -2,7 +2,8 @@ include_directories(${CMAKE_SOURCE_DIR}/common)
 
 add_library(network STATIC
   TcpSocket.cxx
-  UnixSocket.cxx)
+  UnixSocket.cxx
+  PipeSocket.cxx)
 
 if(WIN32)
 	target_link_libraries(network ws2_32)
